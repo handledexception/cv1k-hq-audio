@@ -1,0 +1,17 @@
+# Never commit game ROMs or audio.
+*u23*
+*u24*
+*.bin
+*.rom
+*.zip
+*.mp2
+*.wav
+*.flac
+*.ogg
+*.mp3
+roms/
+out/
+build/
+
+__pycache__/
+*.pyc

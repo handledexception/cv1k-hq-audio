@@ -1,0 +1,187 @@
+"""Rebuild a CV1000 sound ROM with replaced phrase data.
+
+The phrase table stores nothing but a 24-bit offset per phrase, so replacement
+data may be any size. What the layout has to preserve:
+
+  * sequence data stays where it is, because the sequence table's offsets are
+    not rewritten (nothing here changes sequences);
+  * every phrase entry keeps its index, because the SH-3 asks for phrases by
+    number and the game code is untouched;
+  * the ROM length stays a power of two, because the chip masks with size-1.
+
+Stock ROMs address samples with 24 bits, capping the image at 16 MB. The
+YMZ774 in the same family widens this by taking bits 0-3 of the entry's first
+byte as offset bits 24-27; `wide_offsets` does the same here, which an emulator
+has to opt into.
+"""
+
+import collections
+
+from . import amm
+
+MAX_OFFSET_24 = 0xFFFFFF
+MAX_OFFSET_28 = 0xFFFFFFF
+
+
+class PackError(Exception):
+    pass
+
+
+def _is_pow2(n):
+    return n > 0 and (n & (n - 1)) == 0
+
+
+def read_sequences(rom):
+    """{sequence index: bytes}. Lengths come from walking to the 0x0F terminator."""
+    out = {}
+    for i in range(amm.N_SEQS):
+        off = amm.seq_offset(rom, i)
+        if not off:
+            continue
+        _ops, _ticks, end = amm.disasm_sequence(rom, off)
+        out[i] = rom[off:end]
+    return out
+
+
+def unpack(rom):
+    """Split a ROM into {phrase index: bytes} and {sequence index: bytes}."""
+    phrases = amm.read_phrases(rom)
+    return ({i: rom[p.offset:p.end] for i, p in phrases.items()},
+            read_sequences(rom))
+
+
+class _Arena(object):
+    """Append-only blob store that reuses identical blobs, as stock ROMs do."""
+
+    def __init__(self, base):
+        self.base = base
+        self.data = bytearray()
+        self._seen = {}
+
+    def add(self, blob):
+        blob = bytes(blob)
+        key = (len(blob), hash(blob))
+        for off in self._seen.get(key, ()):
+            if self.data[off:off + len(blob)] == blob:
+                return self.base + off
+        off = len(self.data)
+        self._seen.setdefault(key, []).append(off)
+        self.data += blob
+        return self.base + off
+
+    def __len__(self):
+        return len(self.data)
+
+
+def pack(rom, replacements=None, rom_size=None, wide_offsets=False,
+         sequences=None):
+    """Build a new ROM image.
+
+    replacements maps phrase index -> new AMM blob; sequences maps sequence
+    index -> new sequence bytes. Anything left out keeps its original data.
+
+    Both tables are rewritten, so nothing depends on how the source ROM laid
+    its sequence and phrase data out. Sequences are placed first, keeping them
+    at low offsets the way stock ROMs do.
+    """
+    replacements = dict(replacements or {})
+    seq_replacements = dict(sequences or {})
+
+    old_phrases = amm.read_phrases(rom)
+    old_seqs = read_sequences(rom)
+
+    arena = _Arena(amm.DATA_START)
+
+    seq_offsets = {}
+    for i in sorted(set(old_seqs) | set(seq_replacements)):
+        blob = seq_replacements.get(i, old_seqs.get(i))
+        if blob:
+            seq_offsets[i] = arena.add(blob)
+
+    phrase_blobs = {}
+    for i in sorted(set(old_phrases) | set(replacements)):
+        if i in replacements:
+            blob = bytes(replacements[i])
+        else:
+            p = old_phrases[i]
+            blob = rom[p.offset:p.end]
+        if blob:
+            phrase_blobs[i] = blob
+
+    # Largest first, so the big tracks sit together and any offset-limit
+    # failure shows up on the item that actually caused it.
+    phrase_offsets = {}
+    for i in sorted(phrase_blobs, key=lambda k: (-len(phrase_blobs[k]), k)):
+        phrase_offsets[i] = arena.add(phrase_blobs[i])
+
+    offsets = phrase_offsets
+    total = amm.DATA_START + len(arena)
+    if rom_size is None:
+        rom_size = 1 << (total - 1).bit_length()
+        rom_size = max(rom_size, len(rom))
+    if not _is_pow2(rom_size):
+        raise PackError("ROM size 0x%x is not a power of two; the chip masks with size-1"
+                        % rom_size)
+    if total > rom_size:
+        raise PackError("content needs %.2f MB but ROM size is %.2f MB"
+                        % (total / 1048576.0, rom_size / 1048576.0))
+
+    limit = MAX_OFFSET_28 if wide_offsets else MAX_OFFSET_24
+    for what, table in (("phrase", phrase_offsets), ("sequence", seq_offsets)):
+        for i, off in table.items():
+            if off > limit:
+                raise PackError(
+                    "%s %d lands at 0x%x, past the %d-bit offset limit%s"
+                    % (what, i, off, 28 if wide_offsets else 24,
+                       "" if wide_offsets else " (try wide_offsets=True)"))
+
+    out = bytearray(rom_size)
+    out[:amm.DATA_START] = rom[:amm.DATA_START]     # tables, rewritten below
+    out[amm.DATA_START:total] = arena.data
+
+    def write_entry(base, i, off, keep_high):
+        e = base + 4 * i
+        high = keep_high
+        if wide_offsets:
+            high |= (off >> 24) & 0x0F
+        out[e] = high
+        out[e + 1] = (off >> 16) & 0xFF
+        out[e + 2] = (off >> 8) & 0xFF
+        out[e + 3] = off & 0xFF
+
+    for i in range(amm.N_PHRASES):
+        write_entry(amm.PHRASE_TABLE, i, phrase_offsets.get(i, 0),
+                    rom[amm.PHRASE_TABLE + 4 * i] & 0x70)    # keep atbl
+    for i in range(amm.N_SEQS):
+        write_entry(amm.SEQ_TABLE, i, seq_offsets.get(i, 0),
+                    rom[amm.SEQ_TABLE + 4 * i] & 0x70)
+
+    return bytes(out), total
+
+
+def to_u23_u24(rom):
+    """Split a packed image back into byteswapped u23/u24 halves.
+
+    Only meaningful for an 8 MB image -- the stock split is 4 MB each.
+    """
+    d = bytearray(rom)
+    d[0::2], d[1::2] = d[1::2], d[0::2]
+    half = len(d) // 2
+    return bytes(d[:half]), bytes(d[half:])
+
+
+def summarize(rom, total_used):
+    """Occupancy of a packed image, for reporting."""
+    phrases = amm.read_phrases(rom)
+    uniq = {}
+    for i, p in phrases.items():
+        uniq.setdefault(p.offset, p)
+    bgm = amm.classify_bgm(rom)
+    stat = collections.OrderedDict()
+    stat["rom_size"] = len(rom)
+    stat["used"] = total_used
+    stat["free"] = len(rom) - total_used
+    stat["phrases"] = len(uniq)
+    stat["bgm_bytes"] = sum(p.nbytes for o, p in uniq.items() if p.index in bgm)
+    stat["sfx_bytes"] = sum(p.nbytes for o, p in uniq.items() if p.index not in bgm)
+    return stat

@@ -1,0 +1,11 @@
+GOAL: Reverse engineer Cave CV1000 ROM format and CV1000 audio system (Yamaha YMZ770) to
+determine if it would be possible to create a ROM hack to replace the highly compressed mono audio
+in the ROMs with higher quality less compressed stereo audio data, modify the FBNeo emulator to support 
+playing the higher quality stereo audio.
+
+Scripts for extracting CV1000 ROMs
+C:\Repos\github\cv1k_research
+
+Cave ROMS (some non-CV1000 ROMs present such as older DoDonPachi, Espgaluda, Ketsui, etc.)
+C:\Games\fbneo\roms\cave
+Example of a CV1000 game: ibara.zip, futaribl.zip
