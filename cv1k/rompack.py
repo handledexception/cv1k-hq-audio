@@ -22,9 +22,75 @@ from . import amm
 MAX_OFFSET_24 = 0xFFFFFF
 MAX_OFFSET_28 = 0xFFFFFFF
 
+# Marker an emulator uses to tell a replacement ROM from a stock one. It sits in
+# the SAC table, which the YMZ770C only reads in Simple Access mode -- a mode
+# CV1000 cannot reach, because /SEL is tied high. Fields are big-endian to match
+# the phrase table. Must stay in step with cv1khq_parse() in FBNeo's d_cv1k.cpp.
+HQ_MAGIC = b"CV1KAUD\0"
+HQ_HEADER = 0x800
+HQ_HEADER_LEN = 0x14
+HQ_VERSION = 1
+HQ_FLAG_WIDE = 1
+
+VALID_RATES = (16000, 22050, 24000, 32000, 44100, 48000)
+
 
 class PackError(Exception):
     pass
+
+
+def _fnv1a(data):
+    h = 2166136261
+    for b in data:
+        h = ((h ^ b) * 16777619) & 0xFFFFFFFF
+    return h
+
+
+def write_hq_header(rom, sample_rate, wide_offsets=False, version=HQ_VERSION):
+    """Stamp the replacement-ROM marker into a packed image."""
+    if sample_rate not in VALID_RATES:
+        raise PackError("sample rate %d is not encodable in AMM" % sample_rate)
+    out = bytearray(rom)
+    flags = HQ_FLAG_WIDE if wide_offsets else 0
+    hdr = bytearray(HQ_MAGIC)
+    hdr += version.to_bytes(2, "big")
+    hdr += flags.to_bytes(2, "big")
+    hdr += len(out).to_bytes(4, "big")
+    hdr += sample_rate.to_bytes(4, "big")
+    assert len(hdr) == HQ_HEADER_LEN
+    hdr += _fnv1a(hdr).to_bytes(4, "big")
+    out[HQ_HEADER:HQ_HEADER + len(hdr)] = hdr
+    return bytes(out)
+
+
+def check_rate_consistency(rom, sample_rate):
+    """Phrase indices whose audio is not at `sample_rate`.
+
+    The chip clocks one DAC, and an emulator has a single output stream, so a
+    ROM cannot mix rates: anything left at 16 kHz inside a 32 kHz image plays
+    at double speed. Every phrase has to be re-encoded, not just the music.
+    """
+    bad = {}
+    for i, p in amm.read_phrases(rom).items():
+        if p.header is not None and p.header.sample_rate != sample_rate:
+            bad[i] = p.header.sample_rate
+    return bad
+
+
+def read_hq_header(rom):
+    """Parse the marker, or None if this looks like a stock ROM."""
+    h = rom[HQ_HEADER:HQ_HEADER + HQ_HEADER_LEN + 4]
+    if len(h) < HQ_HEADER_LEN + 4 or bytes(h[:8]) != HQ_MAGIC:
+        return None
+    if int.from_bytes(h[HQ_HEADER_LEN:HQ_HEADER_LEN + 4], "big") != _fnv1a(h[:HQ_HEADER_LEN]):
+        raise PackError("replacement ROM header failed its checksum")
+    return {
+        "version": int.from_bytes(h[8:10], "big"),
+        "flags": int.from_bytes(h[10:12], "big"),
+        "rom_size": int.from_bytes(h[12:16], "big"),
+        "sample_rate": int.from_bytes(h[16:20], "big"),
+        "wide_offsets": bool(int.from_bytes(h[10:12], "big") & HQ_FLAG_WIDE),
+    }
 
 
 def _is_pow2(n):
@@ -74,7 +140,7 @@ class _Arena(object):
 
 
 def pack(rom, replacements=None, rom_size=None, wide_offsets=False,
-         sequences=None):
+         sequences=None, hq_sample_rate=None):
     """Build a new ROM image.
 
     replacements maps phrase index -> new AMM blob; sequences maps sequence
@@ -156,7 +222,10 @@ def pack(rom, replacements=None, rom_size=None, wide_offsets=False,
         write_entry(amm.SEQ_TABLE, i, seq_offsets.get(i, 0),
                     rom[amm.SEQ_TABLE + 4 * i] & 0x70)
 
-    return bytes(out), total
+    result = bytes(out)
+    if hq_sample_rate is not None:
+        result = write_hq_header(result, hq_sample_rate, wide_offsets)
+    return result, total
 
 
 def to_u23_u24(rom):
