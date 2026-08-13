@@ -14,14 +14,52 @@ arranged versions.
 
 import os
 import subprocess
+import tempfile
 
 import numpy as np
+
+from . import amm
 
 SEARCH_RATE = 16000
 
 
 class AlignError(Exception):
     pass
+
+
+def decode_phrase(rom, phrase, ffmpeg="ffmpeg", rate=SEARCH_RATE):
+    """Decode a ROM phrase to a float32 mono array at `rate`.
+
+    The .mp2 a phrase exports to may declare a different sample rate than the
+    phrase really uses; that is how param_index survives the re-header when no
+    LSF header can express it, as in deathsml and ddpsdoj. Asking ffmpeg for an
+    output rate would make it resample from the declared rate and stretch the
+    audio, so decode at whatever it claims, relabel to the real rate, and
+    resample from there.
+    """
+    data, _declared = amm.phrase_to_mp2(rom, phrase)
+    fd, tmp = tempfile.mkstemp(suffix=".mp2")
+    os.close(fd)
+    try:
+        with open(tmp, "wb") as f:
+            f.write(data)
+        proc = subprocess.run(
+            [ffmpeg, "-hide_banner", "-loglevel", "error", "-i", tmp,
+             "-ac", "1", "-f", "s16le", "-c:a", "pcm_s16le", "-"],
+            capture_output=True)
+        if proc.returncode != 0:
+            raise AlignError(proc.stderr.decode("utf-8", "replace").strip())
+    finally:
+        os.unlink(tmp)
+
+    x = np.frombuffer(proc.stdout, dtype="<i2").astype(np.float32)
+    x = x[:phrase.samples]                  # drop the padded final frame
+    real = phrase.header.sample_rate if phrase.header else rate
+    if real != rate and len(x) > 1:
+        n = int(round(len(x) * rate / float(real)))
+        x = np.interp(np.linspace(0, len(x) - 1, n),
+                      np.arange(len(x)), x).astype(np.float32)
+    return x
 
 
 def decode_to_mono(path, rate=SEARCH_RATE, ffmpeg="ffmpeg", start=None, duration=None):

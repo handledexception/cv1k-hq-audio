@@ -34,11 +34,20 @@ def load_rom(*paths):
 
     Equivalent to FBNeo's BurnByteswap() on the concatenated ROMs, and to
     running U4_Utils/swap.py over each file first.
+
+    Some dumps carry a little junk past the end of the device -- ddpsdoj's
+    halves are 0x400100 rather than 0x400000. Each half is truncated to the
+    power of two it really is, otherwise the extra bytes would shift the
+    second half and every offset in the tables with it.
     """
     data = bytearray()
     for p in paths:
         with open(p, "rb") as f:
-            data += f.read()
+            half = f.read()
+        real = 1 << (len(half).bit_length() - 1)
+        if real != len(half):
+            half = half[:real]
+        data += half
     data[0::2], data[1::2] = data[1::2], data[0::2]
     return bytes(data)
 

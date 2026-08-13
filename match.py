@@ -21,26 +21,13 @@ import numpy as np
 
 from cv1k import amm, align
 
-DEFAULT_THRESHOLD = 0.5
-
-
-def decode_phrase(rom, phrase, ffmpeg):
-    data, _declared = amm.phrase_to_mp2(rom, phrase)
-    fd, tmp = tempfile.mkstemp(suffix=".mp2")
-    os.close(fd)
-    try:
-        with open(tmp, "wb") as f:
-            f.write(data)
-        proc = subprocess.run(
-            [ffmpeg, "-hide_banner", "-loglevel", "error", "-i", tmp,
-             "-ar", str(align.SEARCH_RATE), "-ac", "1",
-             "-f", "s16le", "-c:a", "pcm_s16le", "-"], capture_output=True)
-        if proc.returncode != 0:
-            raise RuntimeError(proc.stderr.decode("utf-8", "replace"))
-        want = int(phrase.seconds * align.SEARCH_RATE) * 2
-        return np.frombuffer(proc.stdout[:want], dtype="<i2").astype(np.float32)
-    finally:
-        os.unlink(tmp)
+# How well a phrase must correlate to count as found. The absolute score
+# varies a lot by game -- ibara's matches land near 0.95, ddpsdoj's near 0.41,
+# because that game's audio is not a straight downmix of the CD stereo mix. The
+# margin over the next best track is far steadier: a real match beats the
+# runner-up by 20x, a false one by nothing. So require both a floor and a gap.
+DEFAULT_THRESHOLD = 0.08
+DEFAULT_MARGIN = 3.0
 
 
 def main():
@@ -49,7 +36,10 @@ def main():
     ap.add_argument("romdir")
     ap.add_argument("ostdir")
     ap.add_argument("-o", "--out", required=True)
-    ap.add_argument("--threshold", type=float, default=DEFAULT_THRESHOLD)
+    ap.add_argument("--threshold", type=float, default=DEFAULT_THRESHOLD,
+                    help="minimum correlation score")
+    ap.add_argument("--margin", type=float, default=DEFAULT_MARGIN,
+                    help="how many times the runner-up the best must be")
     ap.add_argument("--exclude", default="Arranged,Voice,Arrange",
                     help="skip tracks whose names contain these (comma separated)")
     ap.add_argument("--ffmpeg", default=os.environ.get("FFMPEG", "ffmpeg"))
@@ -75,7 +65,7 @@ def main():
             entry = dict(seen[p.offset], phrase=i)
             entries.append(entry)
             continue
-        ref = decode_phrase(rom, p, args.ffmpeg)
+        ref = align.decode_phrase(rom, p, ffmpeg=args.ffmpeg)
         results = align.match_phrase(ref, tracks, ffmpeg=args.ffmpeg, cache=cache)
         best = results[0] if results else (0.0, 0.0, None)
         score, start, path = best
@@ -88,15 +78,16 @@ def main():
             "score": round(score, 4),
             "runner_up": round(runner, 4),
         }
-        if score >= args.threshold:
+        ratio = score / runner if runner > 0 else float("inf")
+        if score >= args.threshold and ratio >= args.margin:
             entry["track"] = os.path.basename(path)
             entry["start"] = round(start, 6)
             matched += 1
-            print("  phrase %3d  %6.2fs  %.3f  @%7.2fs  %s"
-                  % (i, p.seconds, score, start, os.path.basename(path)))
+            print("  phrase %3d  %6.2fs  %.3f (%4.1fx)  @%7.2fs  %s"
+                  % (i, p.seconds, score, ratio, start, os.path.basename(path)))
         else:
-            print("  phrase %3d  %6.2fs  %.3f  no match (keeps ROM audio)"
-                  % (i, p.seconds, score))
+            print("  phrase %3d  %6.2fs  %.3f (%4.1fx)  no match (keeps ROM audio)"
+                  % (i, p.seconds, score, ratio))
         seen[p.offset] = entry
         entries.append(entry)
 
@@ -104,6 +95,7 @@ def main():
         "rom": os.path.basename(os.path.normpath(args.romdir)),
         "ost_dir": os.path.abspath(args.ostdir),
         "threshold": args.threshold,
+        "margin": args.margin,
         "phrases": entries,
     }
     outdir = os.path.dirname(args.out)

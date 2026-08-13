@@ -55,19 +55,7 @@ def level_match_db(rom, phrase, track, start, ffmpeg):
     The CD is mastered louder than the game audio. Without this the replaced
     music would sit well above the sound effects, which are staying as they are.
     """
-    data, _declared = amm.phrase_to_mp2(rom, phrase)
-    fd, tmp = tempfile.mkstemp(suffix=".mp2")
-    os.close(fd)
-    try:
-        with open(tmp, "wb") as f:
-            f.write(data)
-        proc = subprocess.run(
-            [ffmpeg, "-hide_banner", "-loglevel", "error", "-i", tmp,
-             "-ar", str(align.SEARCH_RATE), "-ac", "1",
-             "-f", "s16le", "-c:a", "pcm_s16le", "-"], capture_output=True)
-        a = np.frombuffer(proc.stdout, dtype="<i2").astype(np.float32)
-    finally:
-        os.unlink(tmp)
+    a = align.decode_phrase(rom, phrase, ffmpeg=ffmpeg)
     b = align.decode_to_mono(track, ffmpeg=ffmpeg, start=start,
                              duration=phrase.seconds)
     ra, rb = rms(a), rms(b)
