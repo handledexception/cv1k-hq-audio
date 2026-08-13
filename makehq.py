@@ -52,7 +52,8 @@ def main():
     ap.add_argument("--rate", type=int, default=32000, choices=rompack.VALID_RATES)
     ap.add_argument("--bitrate", type=int, default=128, help="kbps")
     ap.add_argument("--stereo", action="store_true")
-    ap.add_argument("--rom-size", type=lambda s: int(s, 0), default=0x2000000)
+    ap.add_argument("--rom-size", type=lambda s: int(s, 0), default=0x1000000,
+                    choices=(0x800000, 0x1000000))
     ap.add_argument("--phrases", help="comma-separated phrase numbers (default: all music)")
     ap.add_argument("--ffmpeg", default=os.environ.get("FFMPEG", "ffmpeg"))
     args = ap.parse_args()
@@ -115,10 +116,8 @@ def main():
         print("  [%2d/%2d] phrase %3d  %6.2fs  %8d -> %8d B"
               % (n, len(want), i, p.seconds, p.nbytes, len(blob)))
 
-    wide = args.rom_size > 0x1000000
     packed, used = rompack.pack(rom, replacements,
                                 rom_size=args.rom_size,
-                                wide_offsets=wide,
                                 hq_sample_rate=args.rate)
     with open(args.out, "wb") as f:
         f.write(packed)
@@ -137,8 +136,7 @@ def main():
     print("\nwrote %s" % args.out)
     print("  %.2f / %.2f MB used, %d phrases replaced"
           % (used / 1048576.0, len(packed) / 1048576.0, len(replacements)))
-    print("  header: v%d, %d Hz, wide offsets %s"
-          % (hdr["version"], hdr["sample_rate"], hdr["wide_offsets"]))
+    print("  header: v%d, %d Hz" % (hdr["version"], hdr["sample_rate"]))
     print("\nAdd it to the romset zip as cv1khq.bin.")
     return 0
 

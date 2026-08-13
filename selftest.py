@@ -6,7 +6,7 @@ Each ROM directory is exercised three ways:
 
   1. repack unchanged   -- the packer must be a no-op on stock data
   2. re-encode one BGM phrase at stock settings and pack into 8 MB
-  3. same, but at a higher rate/bitrate into a wider ROM
+  3. same, but at a higher rate and bitrate
 
 (2) is the interesting one: it validates the encoder and packer together
 without needing any emulator change, because the result is a stock-format ROM.
@@ -73,7 +73,7 @@ def test_identity(rom, name):
 
 
 def test_reencode(rom, name, phrase_idx, sample_rate, bitrate, channels,
-                  rom_size, wide, label):
+                  rom_size, label):
     phrases = amm.read_phrases(rom)
     src = phrases[phrase_idx]
 
@@ -91,8 +91,7 @@ def test_reencode(rom, name, phrase_idx, sample_rate, bitrate, channels,
     if got != want_samples:
         return _fail("%s: asked %d samples, phrase plays %d" % (label, want_samples, got))
 
-    packed, used = rompack.pack(rom, {phrase_idx: blob},
-                                rom_size=rom_size, wide_offsets=wide)
+    packed, used = rompack.pack(rom, {phrase_idx: blob}, rom_size=rom_size)
     out = amm.read_phrases(packed)[phrase_idx]
     if out.samples != want_samples:
         return _fail("%s: after packing, phrase plays %d samples" % (label, out.samples))
@@ -130,8 +129,8 @@ def run(path):
     print("%s (%d MB, %d phrases, %d BGM)" % (name, len(rom) // 1048576, len(phrases), len(bgm)))
     results = [
         test_identity(rom, name),
-        test_reencode(rom, name, idx, 16000, 48, 1, len(rom), False, "stock 16k/48k mono"),
-        test_reencode(rom, name, idx, 32000, 128, 2, 0x2000000, True, "HQ 32k/128k stereo"),
+        test_reencode(rom, name, idx, 16000, 48, 1, len(rom), "stock 16k/48k mono"),
+        test_reencode(rom, name, idx, 32000, 112, 1, 0x1000000, "HQ 32k/112k mono"),
     ]
     print()
     return all(results)

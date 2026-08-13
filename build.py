@@ -96,7 +96,9 @@ def main():
     ap.add_argument("--rate", type=int, default=32000, choices=rompack.VALID_RATES)
     ap.add_argument("--bgm-bitrate", type=int, default=112)
     ap.add_argument("--sfx-bitrate", type=int, default=64)
-    ap.add_argument("--rom-size", type=lambda s: int(s, 0), default=0x1000000)
+    # 16 MB is the ceiling: sample offsets are 24 bits.
+    ap.add_argument("--rom-size", type=lambda s: int(s, 0), default=0x1000000,
+                    choices=(0x800000, 0x1000000))
     ap.add_argument("--no-level-match", action="store_true")
     ap.add_argument("--ffmpeg", default=os.environ.get("FFMPEG", "ffmpeg"))
     args = ap.parse_args()
@@ -181,9 +183,8 @@ def main():
         done[p.offset] = blob
         replacements[i] = blob
 
-    wide = args.rom_size > 0x1000000
     packed, used = rompack.pack(rom, replacements, rom_size=args.rom_size,
-                                wide_offsets=wide, hq_sample_rate=args.rate)
+                                hq_sample_rate=args.rate)
 
     bad = rompack.check_rate_consistency(packed, args.rate)
     if bad:
@@ -205,9 +206,8 @@ def main():
     hdr = rompack.read_hq_header(packed)
     print("\n%d phrases from the soundtrack, %d re-encoded from the ROM"
           % (from_ost, from_rom))
-    print("  %.2f / %.2f MB used, %d Hz, %d-bit offsets"
-          % (used / 1048576.0, len(packed) / 1048576.0, hdr["sample_rate"],
-             28 if wide else 24))
+    print("  %.2f / %.2f MB used, %d Hz, 24-bit offsets"
+          % (used / 1048576.0, len(packed) / 1048576.0, hdr["sample_rate"]))
     print("\nromset files (add both to the hack's zip):")
     for path, half in zip(paths, (u23, u24)):
         print("  %-40s %8d bytes  crc32 %08x"

@@ -9,10 +9,10 @@ data may be any size. What the layout has to preserve:
     number and the game code is untouched;
   * the ROM length stays a power of two, because the chip masks with size-1.
 
-Stock ROMs address samples with 24 bits, capping the image at 16 MB. The
-YMZ774 in the same family widens this by taking bits 0-3 of the entry's first
-byte as offset bits 24-27; `wide_offsets` does the same here, which an emulator
-has to opt into.
+Sample offsets are 24 bits, capping the image at 16 MB. The YMZ774 in the same
+family widens this by taking bits 0-3 of the entry's first byte as offset bits
+24-27, but the YMZ770C does not read those, so a wider image would put phrases
+where no real chip could find them. 16 MB is the ceiling.
 """
 
 import collections
@@ -20,7 +20,6 @@ import collections
 from . import amm
 
 MAX_OFFSET_24 = 0xFFFFFF
-MAX_OFFSET_28 = 0xFFFFFFF
 
 # Marker an emulator uses to tell a replacement ROM from a stock one. It sits in
 # the SAC table, which the YMZ770C only reads in Simple Access mode -- a mode
@@ -30,7 +29,7 @@ HQ_MAGIC = b"CV1KAUD\0"
 HQ_HEADER = 0x800
 HQ_HEADER_LEN = 0x14
 HQ_VERSION = 1
-HQ_FLAG_WIDE = 1
+HQ_FLAG_WIDE = 1        # 28-bit offsets; refused, see above
 
 VALID_RATES = (16000, 22050, 24000, 32000, 44100, 48000)
 
@@ -46,12 +45,12 @@ def _fnv1a(data):
     return h
 
 
-def write_hq_header(rom, sample_rate, wide_offsets=False, version=HQ_VERSION):
+def write_hq_header(rom, sample_rate, version=HQ_VERSION):
     """Stamp the replacement-ROM marker into a packed image."""
     if sample_rate not in VALID_RATES:
         raise PackError("sample rate %d is not encodable in AMM" % sample_rate)
     out = bytearray(rom)
-    flags = HQ_FLAG_WIDE if wide_offsets else 0
+    flags = 0
     hdr = bytearray(HQ_MAGIC)
     hdr += version.to_bytes(2, "big")
     hdr += flags.to_bytes(2, "big")
@@ -89,7 +88,6 @@ def read_hq_header(rom):
         "flags": int.from_bytes(h[10:12], "big"),
         "rom_size": int.from_bytes(h[12:16], "big"),
         "sample_rate": int.from_bytes(h[16:20], "big"),
-        "wide_offsets": bool(int.from_bytes(h[10:12], "big") & HQ_FLAG_WIDE),
     }
 
 
@@ -139,8 +137,8 @@ class _Arena(object):
         return len(self.data)
 
 
-def pack(rom, replacements=None, rom_size=None, wide_offsets=False,
-         sequences=None, hq_sample_rate=None):
+def pack(rom, replacements=None, rom_size=None, sequences=None,
+         hq_sample_rate=None):
     """Build a new ROM image.
 
     replacements maps phrase index -> new AMM blob; sequences maps sequence
@@ -192,14 +190,12 @@ def pack(rom, replacements=None, rom_size=None, wide_offsets=False,
         raise PackError("content needs %.2f MB but ROM size is %.2f MB"
                         % (total / 1048576.0, rom_size / 1048576.0))
 
-    limit = MAX_OFFSET_28 if wide_offsets else MAX_OFFSET_24
     for what, table in (("phrase", phrase_offsets), ("sequence", seq_offsets)):
         for i, off in table.items():
-            if off > limit:
+            if off > MAX_OFFSET_24:
                 raise PackError(
-                    "%s %d lands at 0x%x, past the %d-bit offset limit%s"
-                    % (what, i, off, 28 if wide_offsets else 24,
-                       "" if wide_offsets else " (try wide_offsets=True)"))
+                    "%s %d lands at 0x%x, past the 24-bit offset limit; "
+                    "16 MB is all the chip can address" % (what, i, off))
 
     out = bytearray(rom_size)
     out[:amm.DATA_START] = rom[:amm.DATA_START]     # tables, rewritten below
@@ -207,10 +203,7 @@ def pack(rom, replacements=None, rom_size=None, wide_offsets=False,
 
     def write_entry(base, i, off, keep_high):
         e = base + 4 * i
-        high = keep_high
-        if wide_offsets:
-            high |= (off >> 24) & 0x0F
-        out[e] = high
+        out[e] = keep_high
         out[e + 1] = (off >> 16) & 0xFF
         out[e + 2] = (off >> 8) & 0xFF
         out[e + 3] = off & 0xFF
@@ -224,7 +217,7 @@ def pack(rom, replacements=None, rom_size=None, wide_offsets=False,
 
     result = bytes(out)
     if hq_sample_rate is not None:
-        result = write_hq_header(result, hq_sample_rate, wide_offsets)
+        result = write_hq_header(result, hq_sample_rate)
     return result, total
 
 
