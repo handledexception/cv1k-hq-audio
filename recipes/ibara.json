@@ -1,0 +1,289 @@
+{
+  "rom": "ibara",
+  "ost_dir": "C:\\Users\\phind\\Music\\Cave Company Ltd\\2006 - CVST-0003 - \u92f3\u8594\u8587\u3000\u30aa\u30ea\u30b8\u30ca\u30eb\u30b5\u30a6\u30f3\u30c9\u30c8\u30e9\u30c3\u30af",
+  "threshold": 0.5,
+  "phrases": [
+    {
+      "phrase": 0,
+      "seconds": 1.51,
+      "samples": 24160,
+      "score": 0.1788,
+      "runner_up": 0.1682
+    },
+    {
+      "phrase": 1,
+      "seconds": 29.088,
+      "samples": 465408,
+      "score": 0.0375,
+      "runner_up": 0.0372
+    },
+    {
+      "phrase": 2,
+      "seconds": 6.002,
+      "samples": 96032,
+      "score": 0.9605,
+      "runner_up": 0.135,
+      "track": "15 Ending.mp3",
+      "start": 0.0635
+    },
+    {
+      "phrase": 3,
+      "seconds": 16.002,
+      "samples": 256032,
+      "score": 0.9583,
+      "runner_up": 0.1007,
+      "track": "15 Ending.mp3",
+      "start": 6.0635
+    },
+    {
+      "phrase": 4,
+      "seconds": 0.682,
+      "samples": 10912,
+      "score": 0.9571,
+      "runner_up": 0.2666,
+      "track": "14 NameEntry.mp3",
+      "start": 0.0635
+    },
+    {
+      "phrase": 5,
+      "seconds": 52.366,
+      "samples": 837856,
+      "score": 0.9622,
+      "runner_up": 0.0371,
+      "track": "14 NameEntry.mp3",
+      "start": 0.7435
+    },
+    {
+      "phrase": 6,
+      "seconds": 8.832,
+      "samples": 141312,
+      "score": 0.9596,
+      "runner_up": 0.1207,
+      "track": "13 GameOver.mp3",
+      "start": 0.0635
+    },
+    {
+      "phrase": 7,
+      "seconds": 8.464,
+      "samples": 135424,
+      "score": 0.989,
+      "runner_up": 0.2466,
+      "track": "11 Rose of Zeal.mp3",
+      "start": 0.090188
+    },
+    {
+      "phrase": 8,
+      "seconds": 70.59,
+      "samples": 1129440,
+      "score": 0.9838,
+      "runner_up": 0.0468,
+      "track": "11 Rose of Zeal.mp3",
+      "start": 79.130125
+    },
+    {
+      "phrase": 9,
+      "seconds": 11.666,
+      "samples": 186656,
+      "score": 0.9684,
+      "runner_up": 0.0625,
+      "track": "02 Guardian Angel.mp3",
+      "start": 0.0635
+    },
+    {
+      "phrase": 10,
+      "seconds": 23.296,
+      "samples": 372736,
+      "score": 0.9462,
+      "runner_up": 0.0549,
+      "track": "02 Guardian Angel.mp3",
+      "start": 11.716812
+    },
+    {
+      "phrase": 11,
+      "seconds": 1.722,
+      "samples": 27552,
+      "score": 0.9458,
+      "runner_up": 0.0838,
+      "track": "16 Unused Song.mp3",
+      "start": 0.0635
+    },
+    {
+      "phrase": 12,
+      "seconds": 42.182,
+      "samples": 674912,
+      "score": 0.9631,
+      "runner_up": 0.0345,
+      "track": "16 Unused Song.mp3",
+      "start": 1.783438
+    },
+    {
+      "phrase": 15,
+      "seconds": 6.518,
+      "samples": 104288,
+      "score": 0.9628,
+      "runner_up": 0.1044,
+      "track": "01 Show Time.mp3",
+      "start": 0.0635
+    },
+    {
+      "phrase": 16,
+      "seconds": 65.308,
+      "samples": 1044928,
+      "score": 0.9573,
+      "runner_up": 0.0483,
+      "track": "01 Show Time.mp3",
+      "start": 71.8635
+    },
+    {
+      "phrase": 17,
+      "seconds": 0.376,
+      "samples": 6016,
+      "score": 0.6651,
+      "runner_up": 0.3304,
+      "track": "05 Sky High.mp3",
+      "start": 0.06375
+    },
+    {
+      "phrase": 18,
+      "seconds": 55.502,
+      "samples": 888032,
+      "score": 0.5833,
+      "runner_up": 0.0615,
+      "track": "05 Sky High.mp3",
+      "start": 0.438312
+    },
+    {
+      "phrase": 19,
+      "seconds": 13.056,
+      "samples": 208896,
+      "score": 0.9662,
+      "runner_up": 0.1745,
+      "track": "03 Like a Rolling Stone.mp3",
+      "start": 0.0635
+    },
+    {
+      "phrase": 20,
+      "seconds": 64.906,
+      "samples": 1038496,
+      "score": 0.9605,
+      "runner_up": 0.0497,
+      "track": "03 Like a Rolling Stone.mp3",
+      "start": 78.023438
+    },
+    {
+      "phrase": 21,
+      "seconds": 5.852,
+      "samples": 93632,
+      "score": 0.9745,
+      "runner_up": 0.0951,
+      "track": "04 Endress Train.mp3",
+      "start": 0.0635
+    },
+    {
+      "phrase": 22,
+      "seconds": 64.002,
+      "samples": 1024032,
+      "score": 0.9688,
+      "runner_up": 0.0392,
+      "track": "04 Endress Train.mp3",
+      "start": 69.890125
+    },
+    {
+      "phrase": 23,
+      "seconds": 8.278,
+      "samples": 132448,
+      "score": 0.9554,
+      "runner_up": 0.0819,
+      "track": "06 Robot No.28.mp3",
+      "start": 0.076813
+    },
+    {
+      "phrase": 24,
+      "seconds": 56.276,
+      "samples": 900416,
+      "score": 0.9713,
+      "runner_up": 0.0262,
+      "track": "06 Robot No.28.mp3",
+      "start": 64.610125
+    },
+    {
+      "phrase": 25,
+      "seconds": 11.296,
+      "samples": 180736,
+      "score": 0.9611,
+      "runner_up": 0.06,
+      "track": "07 Rose Garden.mp3",
+      "start": 0.076813
+    },
+    {
+      "phrase": 26,
+      "seconds": 67.766,
+      "samples": 1084256,
+      "score": 0.9657,
+      "runner_up": 0.0442,
+      "track": "07 Rose Garden.mp3",
+      "start": 11.370125
+    },
+    {
+      "phrase": 27,
+      "seconds": 15.002,
+      "samples": 240032,
+      "score": 0.9412,
+      "runner_up": 0.064,
+      "track": "08 Bonds of Steel.mp3",
+      "start": 0.0635
+    },
+    {
+      "phrase": 28,
+      "seconds": 53.334,
+      "samples": 853344,
+      "score": 0.9439,
+      "runner_up": 0.0435,
+      "track": "08 Bonds of Steel.mp3",
+      "start": 15.063437
+    },
+    {
+      "phrase": 29,
+      "seconds": 0.9,
+      "samples": 14400,
+      "score": 0.5728,
+      "runner_up": 0.2319,
+      "track": "10 The Family's Work.mp3",
+      "start": 0.135375
+    },
+    {
+      "phrase": 30,
+      "seconds": 45.988,
+      "samples": 735808,
+      "score": 0.4835,
+      "runner_up": 0.0316
+    },
+    {
+      "phrase": 31,
+      "seconds": 2.324,
+      "samples": 37184,
+      "score": 0.728,
+      "runner_up": 0.2016,
+      "track": "09 Air Pollution.mp3",
+      "start": 0.116875
+    },
+    {
+      "phrase": 32,
+      "seconds": 61.936,
+      "samples": 990976,
+      "score": 0.7856,
+      "runner_up": 0.0441,
+      "track": "09 Air Pollution.mp3",
+      "start": 2.4395
+    },
+    {
+      "phrase": 33,
+      "seconds": 67.206,
+      "samples": 1075296,
+      "score": 0.9265,
+      "runner_up": 0.026,
+      "track": "12 Mother Teresa.mp3",
+      "start": 0.0635
+    }
+  ]
+}

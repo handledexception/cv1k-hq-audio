@@ -9,11 +9,27 @@ format itself reaches far past that.
 **This repo ships code, never audio.** Building a ROM needs your own game ROM
 and your own soundtrack rip. Nothing here redistributes either.
 
-## Status
+## Pipeline
 
-Working: decode, re-encode, repack, and a self test that proves the round trip.
-Not written yet: OST alignment, recipe-driven builds, and the FBNeo changes that
-let an emulator load the result.
+```
+match.py   ROM phrases -> which soundtrack track, and where the loop starts
+build.py   recipe -> replacement ROM
+makehq.py  same, but from the ROM's own audio (proves the chain, no OST needed)
+selftest.py  round-trip checks against real ROMs
+```
+
+Matching is by normalized cross-correlation against the decoded phrase, at
+16 kHz mono so the CD is band-limited to what the ROM has. Scores come out
+strongly bimodal — a real match sits near 0.95, anything that is not the same
+recording lands near 0.04 — so unmatched phrases are easy to spot and simply
+keep their ROM audio.
+
+That also recovers the structure: each track is an intro phrase plus a loop
+phrase, and the loop matches more than one iteration of the CD version, so
+`build.py` backs off a loop when a cut would reach the fade-out.
+
+Soundtrack audio is level-matched to the phrase it replaces. CDs are mastered
+far louder than the game, and the sound effects are not being replaced.
 
 ```
 $ python selftest.py roms/ibara
@@ -43,26 +59,40 @@ twolame emits constant-bitrate frames, so the allocation usually leaves a byte
 or two spare. Cave's data is byte-tight, so each frame is trimmed to the bits
 actually used before packing.
 
-## Headroom
+## What actually limits quality
 
-Measured ceilings from the decoder's own tables, against ~15 min of music:
+Not the ROM size. Measured off ibara's own audio:
 
-| config | audio bandwidth | size | ROM |
-| --- | --- | --- | --- |
-| 16 kHz mono 48 kbps (stock) | 8 kHz | 5.4 MB | 8 MB |
-| 32 kHz mono 112 kbps | 16 kHz | 12.6 MB | 16 MB |
-| 44.1 kHz stereo 192 kbps | 22 kHz | 21.6 MB | 32 MB |
+| | content to | at 7.8 kHz |
+| --- | --- | --- |
+| ROM phrase, 48 kbps | ~7.5 kHz | −79 dB |
+| soundtrack CD | 20 kHz+ | 0 dB |
 
-Sample rate is the bigger lever: 16 kHz caps the audio at 8 kHz of bandwidth no
-matter how many bits are spent. Note that re-encoding the *existing* ROM audio
-at a higher rate gains nothing — the missing band cannot be recovered, which is
-why this is built around soundtrack sources.
+The encoder is already using nearly all of the 8 kHz available to it. That wall
+is **Nyquist for a 16 kHz sample rate**, not an encoder limit, so the muffled
+"telephone" character cannot be fixed by spending more bits. Extra bitrate at
+16 kHz buys cleaner detail below 8 kHz — less warble and grain — and nothing
+else. Only a higher sample rate removes the filtered sound.
 
-Stock ROMs address samples with 24-bit offsets, capping the image at 16 MB.
-`wide_offsets` takes bits 0-3 of each table entry's first byte as offset bits
-24-27, reaching 256 MB. The YMZ774 in the same chip family already reads that
-nibble, so it is a natural extension — but it is an emulator-side one, and no
-real YMZ770C is known to honour it.
+Two things follow. Re-encoding the ROM's *own* audio at a higher rate gains
+nothing, since the missing band cannot come back, which is why this is built
+around soundtrack sources. And a soundtrack rip is usually the real ceiling:
+against a 220 kbps MP3 there is little point past ~256 kbps of MP2.
+
+### Sizing
+
+For ibara's 1141s of audio, storage is not the constraint — even uncompressed
+16-bit stereo at 44.1 kHz is 192 MB, inside what the format can address. The
+limits that do exist:
+
+- **24-bit sample offsets → 16 MB.** What the real chip reads.
+- **28-bit offsets → 256 MB**, via `wide_offsets`, taking bits 0-3 of a table
+  entry's first byte the way the YMZ774 in the same family already does. This
+  is an emulator-side extension; a stock YMZ770C will not follow it.
+- **255 MB** regardless, because `channel.pptr` is an INT32 holding `8*offset`.
+
+So pick a bitrate for transparency to the source and let the size fall out,
+unless real hardware is the target — then 16 MB and 24-bit offsets are hard.
 
 ## Layout
 
