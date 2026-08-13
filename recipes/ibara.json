@@ -1,7 +1,8 @@
 {
   "rom": "ibara",
-  "ost_dir": "C:\\Users\\phind\\Music\\Cave Company Ltd\\2006 - CVST-0003 - \u92f3\u8594\u8587\u3000\u30aa\u30ea\u30b8\u30ca\u30eb\u30b5\u30a6\u30f3\u30c9\u30c8\u30e9\u30c3\u30af",
-  "threshold": 0.5,
+  "ost_dir": "C:\\Music\\Cave Company Ltd\\2006 - CVST-0003 - \u92f3\u8594\u8587\u3000\u30aa\u30ea\u30b8\u30ca\u30eb\u30b5\u30a6\u30f3\u30c9\u30c8\u30e9\u30c3\u30af",
+  "threshold": 0.08,
+  "margin": 3.0,
   "phrases": [
     {
       "phrase": 0,
@@ -139,9 +140,7 @@
       "seconds": 0.376,
       "samples": 6016,
       "score": 0.6651,
-      "runner_up": 0.3304,
-      "track": "05 Sky High.mp3",
-      "start": 0.06375
+      "runner_up": 0.3304
     },
     {
       "phrase": 18,
@@ -247,16 +246,16 @@
       "seconds": 0.9,
       "samples": 14400,
       "score": 0.5728,
-      "runner_up": 0.2319,
-      "track": "10 The Family's Work.mp3",
-      "start": 0.135375
+      "runner_up": 0.2319
     },
     {
       "phrase": 30,
       "seconds": 45.988,
       "samples": 735808,
       "score": 0.4835,
-      "runner_up": 0.0316
+      "runner_up": 0.0316,
+      "track": "10 The Family's Work.mp3",
+      "start": 47.012437
     },
     {
       "phrase": 31,

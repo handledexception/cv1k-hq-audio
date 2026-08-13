@@ -1,0 +1,195 @@
+{
+  "rom": "ddpsdoj",
+  "ost_dir": "C:\\Music\\Cave Company Ltd\\2013 - CVGS-001 - \u6012\u9996\u9818\u8702\u6700\u5927\u5f80\u751f \u30b9\u30da\u30b7\u30e3\u30eb\u30b5\u30a6\u30f3\u30c9\u30c8\u30e9\u30c3\u30af",
+  "threshold": 0.08,
+  "margin": 3.0,
+  "phrases": [
+    {
+      "phrase": 0,
+      "seconds": 1.606,
+      "samples": 25696,
+      "score": 0.4801,
+      "runner_up": 0.2565
+    },
+    {
+      "phrase": 1,
+      "seconds": 30.0,
+      "samples": 480000,
+      "score": 0.4324,
+      "runner_up": 0.084,
+      "track": "1-01 Kizashi (Select).flac",
+      "start": 1.59125
+    },
+    {
+      "phrase": 2,
+      "seconds": 0.562,
+      "samples": 8992,
+      "score": 0.4147,
+      "runner_up": 0.2923
+    },
+    {
+      "phrase": 3,
+      "seconds": 99.43,
+      "samples": 1590880,
+      "score": 0.4117,
+      "runner_up": 0.0207,
+      "track": "1-02 Ran (Stage1).flac",
+      "start": 0.54575
+    },
+    {
+      "phrase": 4,
+      "seconds": 3.954,
+      "samples": 63264,
+      "score": 0.3881,
+      "runner_up": 0.197
+    },
+    {
+      "phrase": 5,
+      "seconds": 100.0,
+      "samples": 1600000,
+      "score": 0.4164,
+      "runner_up": 0.1112,
+      "track": "1-05 Niji (Stage2).flac",
+      "start": 3.939437
+    },
+    {
+      "phrase": 6,
+      "seconds": 2.508,
+      "samples": 40128,
+      "score": 0.4775,
+      "runner_up": 0.185
+    },
+    {
+      "phrase": 7,
+      "seconds": 133.334,
+      "samples": 2133344,
+      "score": 0.3543,
+      "runner_up": 0.0845,
+      "track": "1-06 Ai (Stage3).flac",
+      "start": 2.494
+    },
+    {
+      "phrase": 8,
+      "seconds": 0.47,
+      "samples": 7520,
+      "score": 0.4133,
+      "runner_up": 0.3092
+    },
+    {
+      "phrase": 9,
+      "seconds": 129.376,
+      "samples": 2070016,
+      "score": 0.4218,
+      "runner_up": 0.0235,
+      "track": "1-07 Hibi (Stage4).flac",
+      "start": 129.82925
+    },
+    {
+      "phrase": 10,
+      "seconds": 1.218,
+      "samples": 19488,
+      "score": 0.3465,
+      "runner_up": 0.2279
+    },
+    {
+      "phrase": 11,
+      "seconds": 134.596,
+      "samples": 2153536,
+      "score": 0.3958,
+      "runner_up": 0.0136,
+      "track": "1-08 Michi (Stage5).flac",
+      "start": 135.798188
+    },
+    {
+      "phrase": 12,
+      "seconds": 0.816,
+      "samples": 13056,
+      "score": 0.3485,
+      "runner_up": 0.2015
+    },
+    {
+      "phrase": 13,
+      "seconds": 75.296,
+      "samples": 1204736,
+      "score": 0.4549,
+      "runner_up": 0.0177,
+      "track": "1-03 Taiji (Boss).flac",
+      "start": 76.095313
+    },
+    {
+      "phrase": 14,
+      "seconds": 1.268,
+      "samples": 20288,
+      "score": 0.3954,
+      "runner_up": 0.1377
+    },
+    {
+      "phrase": 15,
+      "seconds": 96.0,
+      "samples": 1536000,
+      "score": 0.265,
+      "runner_up": 0.022,
+      "track": "1-09 Chikara (Final Boss).flac",
+      "start": 97.253375
+    },
+    {
+      "phrase": 16,
+      "seconds": 64.0,
+      "samples": 1024000,
+      "score": 0.1098,
+      "runner_up": 0.0156,
+      "track": "1-10 Tenshi (True Final Boss).flac",
+      "start": 63.986312
+    },
+    {
+      "phrase": 17,
+      "seconds": 4.178,
+      "samples": 66848,
+      "score": 0.1479,
+      "runner_up": 0.0781
+    },
+    {
+      "phrase": 18,
+      "seconds": 11.668,
+      "samples": 186688,
+      "score": 0.4291,
+      "runner_up": 0.048,
+      "track": "1-04 Kachi (Stage Clear).flac",
+      "start": 15.828312
+    },
+    {
+      "phrase": 19,
+      "seconds": 5.484,
+      "samples": 87744,
+      "score": 0.4425,
+      "runner_up": 0.0791,
+      "track": "1-13 Saidaioujou (Ending).flac",
+      "start": 196.351
+    },
+    {
+      "phrase": 20,
+      "seconds": 98.182,
+      "samples": 1570912,
+      "score": 0.4683,
+      "runner_up": 0.0206,
+      "track": "1-13 Saidaioujou (Ending).flac",
+      "start": 103.651062
+    },
+    {
+      "phrase": 21,
+      "seconds": 1.512,
+      "samples": 24192,
+      "score": 0.4342,
+      "runner_up": 0.2196
+    },
+    {
+      "phrase": 22,
+      "seconds": 24.002,
+      "samples": 384032,
+      "score": 0.521,
+      "runner_up": 0.0386,
+      "track": "1-12 Heiwa (Name Entry).flac",
+      "start": 1.496687
+    }
+  ]
+}
