@@ -15,6 +15,7 @@ import subprocess
 import sys
 import tempfile
 import wave
+import zlib
 
 import numpy as np
 
@@ -189,15 +190,28 @@ def main():
         print("\nERROR: %d phrases are not at %d Hz" % (len(bad), args.rate))
         return 1
 
-    with open(args.out, "wb") as f:
-        f.write(packed)
+    # A romset wants the two halves the board has, byteswapped, not one image.
+    u23, u24 = rompack.to_u23_u24(packed)
+    base = args.out
+    for suffix in (".bin", ".u23", ".u24"):
+        if base.lower().endswith(suffix):
+            base = base[:-len(suffix)]
+            break
+    paths = (base + ".u23", base + ".u24")
+    for path, half in zip(paths, (u23, u24)):
+        with open(path, "wb") as f:
+            f.write(half)
+
     hdr = rompack.read_hq_header(packed)
-    print("\nwrote %s" % args.out)
-    print("  %d phrases from the soundtrack, %d re-encoded from the ROM"
+    print("\n%d phrases from the soundtrack, %d re-encoded from the ROM"
           % (from_ost, from_rom))
     print("  %.2f / %.2f MB used, %d Hz, %d-bit offsets"
           % (used / 1048576.0, len(packed) / 1048576.0, hdr["sample_rate"],
              28 if wide else 24))
+    print("\nromset files (add both to the hack's zip):")
+    for path, half in zip(paths, (u23, u24)):
+        print("  %-40s %8d bytes  crc32 %08x"
+              % (os.path.basename(path), len(half), zlib.crc32(half) & 0xFFFFFFFF))
     return 0
 
 

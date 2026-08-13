@@ -229,9 +229,13 @@ def pack(rom, replacements=None, rom_size=None, wide_offsets=False,
 
 
 def to_u23_u24(rom):
-    """Split a packed image back into byteswapped u23/u24 halves.
+    """Split a packed image into byteswapped U23/U24 halves.
 
-    Only meaningful for an 8 MB image -- the stock split is 4 MB each.
+    This is the form a romset wants: the sample ROM is two parts on the board,
+    stored byteswapped relative to what the chip sees, and an emulator loads
+    both halves and swaps. Writing replacement sets the same way means they are
+    the same shape as a real dump -- 8 MB parts instead of 4 MB ones -- rather
+    than a single file needing its own load path.
     """
     d = bytearray(rom)
     d[0::2], d[1::2] = d[1::2], d[0::2]
