@@ -10,9 +10,9 @@ as any music phrase that the tool cannot match to a higher-quality original.
 This puts every audio phrase at the same rate, as the chip clocks a single DAC.
 A ROM cannot mix rates.
 
-Stock ROMs carry **16 kHz mono at 40–48 kbps**. Our default build is:
+Stock ROMs carry **16 kHz mono at 40-48 kbps**. Our default build is:
 **32 kHz mono, 112 kbps for music and 64 kbps for sound effects**.
-This puts ibara's 1141s of audio (938s of it music) at roughly 14 MB,
+This puts Ibara's 1141s of audio (938s of it music) at roughly 14 MB,
 inside of a **16 MB ROM** (original ROMs are 8MB).
 
 ## Important: Intellectual Property Notice
@@ -77,7 +77,7 @@ Not the bitrate. Measured off ibara's own audio:
 
 | | content to | at 7.8 kHz |
 | --- | --- | --- |
-| ROM phrase, 48 kbps | ~7.5 kHz | −79 dB |
+| ROM phrase, 48 kbps | ~7.5 kHz | -79 dB |
 | soundtrack CD | 20 kHz+ | 0 dB |
 
 The encoder is already using nearly all of the 8 kHz available to it. That wall
@@ -158,11 +158,17 @@ selftest.py        end-to-end checks against real ROMs
 recipes/           per-game build recipes (phrase -> track, cut points)
 ```
 
-`cv1k/amm.py` is vendored from
-[cv1k_research](https://github.com/buffis/cv1k_research)`/Audio_ExtractData/`,
-so keep the two in sync. That repo is also where the extraction and inspection
-tooling lives (`cv1k_audio.py`: phrase listings, BGM/SFX classification,
-sequence disassembly).
+## Credits
+
+This is built on buffi's
+[cv1k_research](https://github.com/buffis/cv1k_research), which is where the
+CV1000 hardware was worked out: the sound ROM's table layout, the u23/u24
+byteswap (`U4_Utils/swap.py`), `Audio_ExtractData/extract_audio.py` as the first
+tool to pull AMM phrases out of a ROM, and the JTAG, blitter and video-timing
+work besides. None of this would exist without it.
+
+The Layer II band allocation tables in `amm.py` are transcribed from MAME's
+`mpeg_audio.cpp` (Olivier Galibert, BSD-3-Clause).
 
 ## Emulator support
 

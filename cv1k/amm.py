@@ -9,11 +9,11 @@ bit consumption (see frame_bits), so frame boundaries are found rather than
 guessed. That matters because 0xFFFx byte pairs occur inside frame payloads by
 chance, and because not every game uses the same frame size.
 
-Tables are transcribed from MAME's mpeg_audio.cpp.
+Tables are transcribed from MAME's mpeg_audio.cpp (Olivier Galibert,
+BSD-3-Clause).
 
-Vendored from cv1k_research/Audio_ExtractData/amm.py -- keep the two in sync.
-The copy lives here so this repo runs standalone; the canonical version belongs
-next to the extraction tooling.
+The ROM layout this parses was worked out in buffi's cv1k_research,
+github.com/buffis/cv1k_research.
 """
 
 # ---------------------------------------------------------------------------
