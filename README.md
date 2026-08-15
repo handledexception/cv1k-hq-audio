@@ -95,18 +95,58 @@ sets the bitrate, not the source.
 
 ### Sizing
 
-**16 MB is the ceiling, and it is hard.** The phrase table stores a 24-bit
-sample offset per phrase, so nothing above 16 MB is addressable. `--rom-size`
-accepts 8 or 16 MB and nothing else.
+**This tool caps images at 16 MB.** It reads and writes 24-bit sample offsets,
+and `--rom-size` accepts 8 or 16 MB and nothing else. That is the number to
+build against today.
 
-The YMZ774 in the same family widens this to 28 bits by taking bits 0-3 of a
-table entry's first byte, but the YMZ770C does not read those, so a wider image
-would put phrases where no real chip could find them. That mode was tried and
-removed. The replacement-ROM header keeps a reserved wide flag purely so an
-emulator can recognise such a ROM and reject it instead of misreading it.
+It is probably not the chip's real limit. The YMZ770C catalog (LSI-3MZ770C50)
+documents a phrase ROM of up to 32 MB on a 16-bit data bus, and every table
+entry stores its start address as *bits 24-0* -- 25 bits, not 24. The phrase
+table's spare byte carries `ATBL` in bits 4-6, leaving room for a 25th address
+bit; FBNeo reads only the low three bytes and drops it. CV1000's sound ROM is
+two devices byteswapped as 16-bit words, which looks like the 16-bit bus case.
+
+**Untested.** Nothing here has been run on hardware, and where bit 24 physically
+sits is a guess from the address map. Confirming it would double the budget, and
+unlike the YMZ774-style 28-bit offsets this repo tried and dropped, 25-bit
+offsets would be documented chip behaviour rather than an emulator extension.
+The replacement-ROM header keeps a reserved wide flag so an emulator can
+recognise a 28-bit image and reject it instead of misreading it.
 
 So the budget is what fits in 16 MB: pick the bitrate that spends it on the
 music without overrunning, which is where the 112/64 kbps default comes from.
+
+### Real hardware
+
+The catalog says fs is *"set to the fs specified by the AMM data during
+playback"*, so the rate is not a register or a build-time constant -- the
+decoder reads it out of the frame header. The crystal only picks which pair of
+rates is reachable:
+
+| fs | XI |
+| --- | --- |
+| 48 / 24 kHz | 18.432 MHz |
+| 44.1 / 22.05 kHz | 16.9344 MHz |
+| **32 / 16 kHz** | **16.384 MHz** |
+
+Stock CV1000 audio is 16 kHz, which per that table needs a 16.384 MHz XI, and
+that same crystal covers 32 kHz. So a 32 kHz ROM should play on an unmodified
+board: no oscillator swap, no ROM hack. The reset default is even fs = XI/512 =
+32 kHz, dropping to 16 kHz once a 16 kHz phrase starts.
+
+**What has not been verified.** All of the below wants a real cart:
+
+- **Sequencer tempo.** Wait chains are tuned to a 16 kHz stream. If the
+  sequencer counts fs samples, a 32 kHz ROM plays its music at double tempo and
+  the sequence data would have to be retimed; if it counts off the fixed XI
+  clock, tempo is unaffected. The catalog lists the `TMRH`/`TMRL` wait timers
+  but never documents their units, and the emulator patch assumes the second
+  case. Both cannot be right.
+- **Fitting 16 MB onto a cart**, which is a board question, not a format one.
+- Whether a 770C behaves as the catalog describes once every phrase in a ROM is
+  at 32 kHz, rather than one at a time.
+
+Until someone burns one, treat hardware support as plausible and unproven.
 
 ## Layout
 
@@ -116,7 +156,6 @@ cv1k/encode.py     audio -> MP2 -> AMM phrases
 cv1k/rompack.py    rebuild a ROM image, rewriting both tables
 selftest.py        end-to-end checks against real ROMs
 recipes/           per-game build recipes (phrase -> track, cut points)
-patches/           FBNeo changes needed to load an HQ ROM
 ```
 
 `cv1k/amm.py` is vendored from
@@ -124,6 +163,29 @@ patches/           FBNeo changes needed to load an HQ ROM
 so keep the two in sync. That repo is also where the extraction and inspection
 tooling lives (`cv1k_audio.py`: phrase listings, BGM/SFX classification,
 sequence disassembly).
+
+## Emulator support
+
+A replacement ROM needs an emulator that knows to read the marker and clock its
+output at the ROM's rate. That work lives on the `cv1k-hq-audio` branch of
+[handledexception/FBNeo](https://github.com/handledexception/FBNeo/tree/cv1k-hq-audio),
+which touches three files:
+
+- `src/burn/snd/ymz770.cpp`, `.h` give `ymz770_init` an optional sample rate and
+  give the sequencer its own 16 kHz clock, so a 32 kHz ROM does not play its
+  music at double tempo. At 16 kHz that clock ticks once per sample, so stock
+  ROMs stay bit-identical.
+
+  Note this is not what the chip does. FBNeo opens the stream at a fixed rate
+  and discards the sample rate `decode_buffer()` returns, which was harmless
+  while every ROM was 16 kHz. Hardware follows the rate in the frame header
+  instead, so the faithful fix is to honour the decoded rate per phrase, which
+  would leave the header's `sample_rate` field redundant.
+- `src/burn/drv/cave/d_cv1k.cpp` adds `cv1khq_parse()` and the HQ romsets. Keep
+  it in step with the header constants in `cv1k/rompack.py`.
+
+Stock romsets are matched by content and are unaffected. With no replacement
+present, none of it runs.
 
 ## Repacking notes
 

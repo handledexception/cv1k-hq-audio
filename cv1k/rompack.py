@@ -9,10 +9,14 @@ data may be any size. What the layout has to preserve:
     number and the game code is untouched;
   * the ROM length stays a power of two, because the chip masks with size-1.
 
-Sample offsets are 24 bits, capping the image at 16 MB. The YMZ774 in the same
-family widens this by taking bits 0-3 of the entry's first byte as offset bits
-24-27, but the YMZ770C does not read those, so a wider image would put phrases
-where no real chip could find them. 16 MB is the ceiling.
+This module reads and writes 24-bit sample offsets, capping the image at 16 MB.
+That is the tool's limit, and probably not the chip's: the YMZ770C catalog
+(LSI-3MZ770C50) documents up to 32 MB on a 16-bit data bus and describes each
+table entry's start address as bits 24-0, i.e. 25 bits. Where bit 24 sits is
+unconfirmed and untested on hardware, so nothing here emits it. See README.
+
+The YMZ774 in the same family goes further, taking bits 0-3 of the entry's first
+byte as offset bits 24-27. The YMZ770C does not read those.
 """
 
 import collections
@@ -24,12 +28,15 @@ MAX_OFFSET_24 = 0xFFFFFF
 # Marker an emulator uses to tell a replacement ROM from a stock one. It sits in
 # the SAC table, which the YMZ770C only reads in Simple Access mode -- a mode
 # CV1000 cannot reach, because /SEL is tied high. Fields are big-endian to match
-# the phrase table. Must stay in step with cv1khq_parse() in FBNeo's d_cv1k.cpp.
+# the phrase table. Must stay in step with cv1khq_parse() in d_cv1k.cpp, on the
+# cv1k-hq-audio branch of github.com/handledexception/FBNeo.
 HQ_MAGIC = b"CV1KAUD\0"
 HQ_HEADER = 0x800
 HQ_HEADER_LEN = 0x14
 HQ_VERSION = 1
-HQ_FLAG_WIDE = 1        # 28-bit offsets; refused, see above
+HQ_FLAG_WIDE = 1        # 28-bit offsets. Never set here; bit 0 stays claimed
+                        # so it cannot be reused, and cv1khq_parse() rejects any
+                        # ROM that sets it rather than misreading the offsets.
 
 VALID_RATES = (16000, 22050, 24000, 32000, 44100, 48000)
 
