@@ -1,13 +1,25 @@
-# cv1k_audio
+# cv1k-hq-audio
 
-Toolchain for rebuilding the audio in Cave CV1000 sound ROMs (Yamaha YMZ770C).
+Toolchain for rebuilding Cave CV1000 sound ROMs (Yamaha YMZ770C).
 
-The goal is replacing the game music with higher quality encodes from the
-official soundtrack CDs. Stock ROMs carry **16 kHz mono at 40–48 kbps**; the
-format itself reaches far past that.
+The goal is full replacement of in-game music and sound effects with higher
+quality encodes, sourced from official Cave releases. At present this project
+only replaces the music phrases, sourced from official game soundtrack audio CDs.
+Sound effects are currently re-encoded from the ROM's own audio samples, as well
+as any music phrase that the tool cannot match to a higher-quality original.
+This puts every audio phrase at the same rate, as the chip clocks a single DAC.
+A ROM cannot mix rates.
 
-**This repo ships code, never audio.** Building a ROM needs your own game ROM
-and your own soundtrack rip. Nothing here redistributes either.
+Stock ROMs carry **16 kHz mono at 40–48 kbps**. Our default build is:
+**32 kHz mono, 112 kbps for music and 64 kbps for sound effects**.
+This puts ibara's 1141s of audio (938s of it music) at roughly 14 MB,
+inside of a **16 MB ROM** (original ROMs are 8MB).
+
+## Important: Intellectual Property Notice
+
+**This repo ships code, never ROMs or audio.** Building a new ROM requires your own game ROM
+and official soundtrack audio CD rip. We will NEVER re-distribute Cave intellectual property,
+so DO NOT ASK!
 
 ## Pipeline
 
@@ -20,9 +32,9 @@ selftest.py  round-trip checks against real ROMs
 
 Matching is by normalized cross-correlation against the decoded phrase, at
 16 kHz mono so the CD is band-limited to what the ROM has. Scores come out
-strongly bimodal — a real match sits near 0.95, anything that is not the same
-recording lands near 0.04 — so unmatched phrases are easy to spot and simply
-keep their ROM audio.
+strongly bimodal: a real match sits near 0.95, anything that is not the same
+recording lands near 0.04. Unmatched phrases are easy to spot and simply keep
+their ROM audio.
 
 That also recovers the structure: each track is an intro phrase plus a loop
 phrase, and the loop matches more than one iteration of the CD version, so
@@ -46,8 +58,8 @@ match the format.
 ## How it works
 
 AMM is MPEG Layer II with a repacked 32-bit header, so encoding is ffmpeg's
-libtwolame plus a header rewrite — no Layer II implementation here. Two things
-the rewrite has to get right:
+libtwolame plus a header rewrite, with no Layer II implementation here. Two
+things the rewrite has to get right:
 
 - **No CRC.** AMM has no CRC field, and Layer II with the protection bit clear
   puts 16 CRC bits exactly where AMM expects band data.
@@ -61,7 +73,7 @@ actually used before packing.
 
 ## What actually limits quality
 
-Not the ROM size. Measured off ibara's own audio:
+Not the bitrate. Measured off ibara's own audio:
 
 | | content to | at 7.8 kHz |
 | --- | --- | --- |
@@ -71,28 +83,30 @@ Not the ROM size. Measured off ibara's own audio:
 The encoder is already using nearly all of the 8 kHz available to it. That wall
 is **Nyquist for a 16 kHz sample rate**, not an encoder limit, so the muffled
 "telephone" character cannot be fixed by spending more bits. Extra bitrate at
-16 kHz buys cleaner detail below 8 kHz — less warble and grain — and nothing
+16 kHz buys cleaner detail below 8 kHz (less warble and grain) and nothing
 else. Only a higher sample rate removes the filtered sound.
 
 Two things follow. Re-encoding the ROM's *own* audio at a higher rate gains
 nothing, since the missing band cannot come back, which is why this is built
-around soundtrack sources. And a soundtrack rip is usually the real ceiling:
-against a 220 kbps MP3 there is little point past ~256 kbps of MP2.
+around soundtrack sources. And the source rip would be the next ceiling: against
+a 220 kbps MP3 there is little point past ~256 kbps of MP2. For a game with
+ibara's runtime the 16 MB cap binds well before that, so in practice the cap
+sets the bitrate, not the source.
 
 ### Sizing
 
-For ibara's 1141s of audio, storage is not the constraint — even uncompressed
-16-bit stereo at 44.1 kHz is 192 MB, inside what the format can address. The
-limits that do exist:
+**16 MB is the ceiling, and it is hard.** The phrase table stores a 24-bit
+sample offset per phrase, so nothing above 16 MB is addressable. `--rom-size`
+accepts 8 or 16 MB and nothing else.
 
-- **24-bit sample offsets → 16 MB.** What the real chip reads.
-- **28-bit offsets → 256 MB**, via `wide_offsets`, taking bits 0-3 of a table
-  entry's first byte the way the YMZ774 in the same family already does. This
-  is an emulator-side extension; a stock YMZ770C will not follow it.
-- **255 MB** regardless, because `channel.pptr` is an INT32 holding `8*offset`.
+The YMZ774 in the same family widens this to 28 bits by taking bits 0-3 of a
+table entry's first byte, but the YMZ770C does not read those, so a wider image
+would put phrases where no real chip could find them. That mode was tried and
+removed. The replacement-ROM header keeps a reserved wide flag purely so an
+emulator can recognise such a ROM and reject it instead of misreading it.
 
-So pick a bitrate for transparency to the source and let the size fall out,
-unless real hardware is the target — then 16 MB and 24-bit offsets are hard.
+So the budget is what fits in 16 MB: pick the bitrate that spends it on the
+music without overrunning, which is where the 112/64 kbps default comes from.
 
 ## Layout
 
@@ -102,12 +116,12 @@ cv1k/encode.py     audio -> MP2 -> AMM phrases
 cv1k/rompack.py    rebuild a ROM image, rewriting both tables
 selftest.py        end-to-end checks against real ROMs
 recipes/           per-game build recipes (phrase -> track, cut points)
-patches/           FBNeo changes needed to load a wider/HQ ROM
+patches/           FBNeo changes needed to load an HQ ROM
 ```
 
 `cv1k/amm.py` is vendored from
-[cv1k_research](https://github.com/buffis/cv1k_research)`/Audio_ExtractData/` —
-keep the two in sync. That repo is also where the extraction and inspection
+[cv1k_research](https://github.com/buffis/cv1k_research)`/Audio_ExtractData/`,
+so keep the two in sync. That repo is also where the extraction and inspection
 tooling lives (`cv1k_audio.py`: phrase listings, BGM/SFX classification,
 sequence disassembly).
 
