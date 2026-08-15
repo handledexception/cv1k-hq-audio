@@ -1,6 +1,6 @@
 {
   "rom": "ibara",
-  "ost_dir": "C:\\Music\\Cave\\2006 - CVST-0003 - \u92f3\u8594\u8587\u3000\u30aa\u30ea\u30b8\u30ca\u30eb\u30b5\u30a6\u30f3\u30c9\u30c8\u30e9\u30c3\u30af",
+  "ost_dir": "..\\ost\\2006 - CVST-0003 - \u92f3\u8594\u8587\u3000\u30aa\u30ea\u30b8\u30ca\u30eb\u30b5\u30a6\u30f3\u30c9\u30c8\u30e9\u30c3\u30af",
   "threshold": 0.08,
   "margin": 3.0,
   "phrases": [

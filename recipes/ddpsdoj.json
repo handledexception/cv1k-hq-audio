@@ -1,6 +1,6 @@
 {
   "rom": "ddpsdoj",
-  "ost_dir": "C:\\Music\\Cave\\2013 - CVGS-001 - \u6012\u9996\u9818\u8702\u6700\u5927\u5f80\u751f \u30b9\u30da\u30b7\u30e3\u30eb\u30b5\u30a6\u30f3\u30c9\u30c8\u30e9\u30c3\u30af",
+  "ost_dir": "..\\ost\\2013 - CVGS-001 - \u6012\u9996\u9818\u8702\u6700\u5927\u5f80\u751f \u30b9\u30da\u30b7\u30e3\u30eb\u30b5\u30a6\u30f3\u30c9\u30c8\u30e9\u30c3\u30af",
   "threshold": 0.08,
   "margin": 3.0,
   "phrases": [
